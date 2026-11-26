@@ -1,0 +1,684 @@
+<!doctype html>
+<html lang="ru">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+  <meta name="theme-color" content="#000000">
+  <title>Мои расходы</title>
+  <style>
+    :root {
+      color-scheme: dark;
+      --bg:#000; --panel:#1c1c1e; --panel-2:#2c2c2e; --field:#101015;
+      --line:rgba(255,255,255,.09);
+      --text:#f5f5f7; --muted:#9b9ba6;
+      --accent:#0a84ff; --green:#5df08a; --danger:#ff6b78;
+      --radius:16px;
+      font-family:-apple-system,BlinkMacSystemFont,"SF Pro Display","Segoe UI",sans-serif;
+    }
+    *{box-sizing:border-box;-webkit-tap-highlight-color:transparent}
+    html{min-height:100%;background:var(--bg);touch-action:manipulation;scroll-behavior:smooth}
+    body{
+      margin:0;min-height:100vh;color:var(--text);overflow-x:hidden;touch-action:manipulation;
+      background:radial-gradient(120% 55% at 100% -8%,rgba(94,92,230,.34),transparent 62%),#000;background-repeat:no-repeat;
+      padding:max(18px,env(safe-area-inset-top)) 16px calc(112px + env(safe-area-inset-bottom));
+    }
+    button,input,select{font:inherit;touch-action:manipulation}
+    button{color:inherit;cursor:pointer;-webkit-appearance:none;appearance:none}
+    input,select,textarea{font-size:16px}
+    .app{width:100%;max-width:560px;margin:0 auto}
+    [hidden]{display:none!important}
+
+    /* Шапка */
+    .topbar{display:flex;align-items:flex-start;justify-content:space-between;gap:12px;margin:8px 2px 16px}
+    .eyebrow{color:var(--muted);font-size:13px;margin-bottom:5px;text-transform:capitalize}
+    h1{font-size:30px;line-height:1.05;letter-spacing:-.04em;margin:0;font-weight:750}
+    .privacy-line{color:var(--muted);font-size:12px;margin-top:7px}
+    .currency-btn{flex:0 0 auto;min-height:40px;border:1px solid var(--line);background:var(--panel);color:var(--text);border-radius:12px;padding:0 13px;font-weight:650;font-size:14px}
+    .currency-btn:active{background:var(--panel-2)}
+    .banner{margin:0 2px 14px;padding:12px 14px;border-radius:14px;background:rgba(255,159,10,.14);border:1px solid rgba(255,159,10,.4);color:#ffd9a0;font-size:13px;line-height:1.4}
+
+    /* Период */
+    .periods{display:grid;grid-template-columns:repeat(3,1fr);gap:4px;background:rgba(255,255,255,.06);border:1px solid var(--line);border-radius:14px;padding:4px}
+    .period-btn{min-height:42px;border:0;background:transparent;color:var(--muted);border-radius:10px;font-size:14px;font-weight:600;transition:background .2s,color .2s}
+    .period-btn.active{color:#fff;background:#3a3a3c}
+
+    /* Карточки */
+    .card{background:var(--panel);border:1px solid var(--line);border-radius:var(--radius);padding:19px}
+    .summary{position:relative;overflow:hidden;padding:22px;margin-top:12px;background:linear-gradient(135deg,#0a84ff 0%,#5e5ce6 55%,#bf5af2 100%);border-color:rgba(255,255,255,.18);box-shadow:0 16px 40px rgba(94,92,230,.32)}
+    .summary:after{content:"";position:absolute;width:160px;height:160px;border-radius:50%;right:-65px;top:-85px;background:rgba(255,255,255,.16);pointer-events:none}
+    .summary-label{color:rgba(255,255,255,.85);font-size:14px}
+    .total{font-size:clamp(36px,10vw,48px);letter-spacing:-.055em;font-weight:760;margin:8px 0 8px;overflow-wrap:anywhere;position:relative}
+    .insight{font-size:14px;line-height:1.4;color:rgba(255,255,255,.92);margin-bottom:14px;position:relative}
+    .summary-bottom{display:flex;gap:10px;flex-wrap:wrap;position:relative}
+    .stat-pill{display:flex;align-items:center;gap:7px;padding:8px 12px;border-radius:999px;background:rgba(255,255,255,.2);color:#fff;font-size:13px}
+    .dot{width:7px;height:7px;border-radius:50%;background:#5df08a;box-shadow:0 0 8px #5df08a}
+
+    .savings{margin-top:12px;display:flex;align-items:center;justify-content:space-between;gap:12px;padding:16px 18px}
+    .savings .summary-label{color:var(--muted)}
+    .savings-total{font-size:clamp(26px,7vw,32px);font-weight:750;letter-spacing:-.04em;color:var(--green);margin-top:4px;overflow-wrap:anywhere}
+    .savings-sub{color:var(--muted);font-size:13px;margin-top:4px;line-height:1.35}
+    .ghost-btn{flex:0 0 auto;min-height:44px;padding:0 16px;border:1px solid var(--line);border-radius:13px;background:rgba(255,255,255,.07);color:var(--text);font-size:14px;font-weight:650}
+    .ghost-btn:active{background:rgba(255,255,255,.14)}
+
+    .section-head{display:flex;align-items:center;justify-content:space-between;margin:26px 2px 12px}
+    h2{font-size:19px;letter-spacing:-.025em;margin:0;font-weight:700}
+    .count{color:var(--muted);font-size:13px}
+
+    /* Аналитика */
+    .chart-card{display:grid;grid-template-columns:auto minmax(0,1fr);align-items:center;gap:16px;min-height:200px}
+    .chart-area{display:grid;place-items:center;min-width:0}
+    .donut{width:clamp(104px,34vw,150px);height:clamp(104px,34vw,150px);border-radius:50%;background:conic-gradient(#34343e 0deg 360deg);position:relative;display:grid;place-items:center}
+    .donut:before{content:"";position:absolute;inset:17%;border-radius:50%;background:var(--panel)}
+    .donut-inner{position:relative;z-index:1;text-align:center;width:62%}
+    .donut-inner strong{display:block;font-size:clamp(12px,3vw,15px);letter-spacing:-.04em;overflow-wrap:anywhere}
+    .donut-inner span{color:var(--muted);font-size:12px;margin-top:3px;display:block}
+    .legend{display:flex;flex-direction:column;gap:11px;min-width:0}
+    .legend-row{display:flex;align-items:center;justify-content:space-between;gap:8px;min-width:0;font-size:13px}
+    .legend-color{width:10px;height:10px;border-radius:3px;flex:0 0 10px}
+    .legend-name{color:#d4d3db;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;flex:1;min-width:0}
+    .legend-row{flex-wrap:wrap;row-gap:2px}.legend-value{flex-basis:100%;padding-left:18px;color:#f1f0f5;font-weight:650;white-space:nowrap;font-size:12px;font-variant-numeric:tabular-nums}
+    .legend-value em{font-style:normal;color:var(--muted);font-weight:500}
+    .empty-chart{color:var(--muted);text-align:center;font-size:13px;line-height:1.45;padding:8px}
+
+    /* История */
+    .expense-list{display:flex;flex-direction:column;gap:9px}
+    .expense-item{display:flex;align-items:center;gap:12px;padding:12px 12px 12px 13px;border:1px solid var(--line);border-radius:17px;background:rgba(28,28,30,.9)}
+    .expense-item.fresh{animation:rise .45s cubic-bezier(.22,1,.36,1) both;border-color:rgba(10,132,255,.6)}
+    .category-icon{display:grid;place-items:center;width:44px;height:44px;border-radius:14px;font-size:20px;flex:0 0 44px}
+    .expense-info{min-width:0;flex:1}
+    .expense-title{font-size:15px;font-weight:650;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+    .expense-meta{color:var(--muted);font-size:12px;margin-top:4px}
+    .expense-amount{white-space:nowrap;font-weight:700;font-size:15px;font-variant-numeric:tabular-nums}
+    .delete-btn{flex:0 0 44px;width:44px;height:44px;border:0;border-radius:12px;background:rgba(255,255,255,.06);color:var(--muted);font-size:20px;line-height:1}
+    .delete-btn:active{background:rgba(255,107,120,.2);color:var(--danger)}
+    .empty-list{text-align:center;color:var(--muted);padding:26px 16px;border:1px dashed rgba(255,255,255,.14);border-radius:17px;font-size:14px;line-height:1.5}
+    .empty-list strong{display:block;color:var(--text);font-size:16px;margin-bottom:4px}
+
+    .footer-note{text-align:center;color:#8e8e99;font-size:12px;margin:24px 8px 12px;line-height:1.55}
+    .footer-actions{display:flex;justify-content:center;gap:10px;flex-wrap:wrap}
+
+    /* Нижняя панель */
+    .bottom-dock{position:fixed;z-index:10;left:0;right:0;bottom:0;padding:12px 16px calc(12px + env(safe-area-inset-bottom));background:rgba(18,18,18,.74);border-top:1px solid rgba(255,255,255,.08);backdrop-filter:blur(20px);-webkit-backdrop-filter:blur(20px);display:flex;justify-content:center}
+    .dock-add{width:100%;max-width:528px;min-height:56px;border:0;border-radius:17px;color:#fff;font-size:17px;font-weight:700;background:linear-gradient(135deg,#0a84ff,#5e5ce6 60%,#bf5af2);box-shadow:0 8px 24px rgba(94,92,230,.42)}
+    .dock-add span{font-size:22px;vertical-align:-1px;margin-right:5px}
+    .dock-add:active{transform:scale(.985)}
+
+    /* Шторки */
+    .sheet-backdrop{position:fixed;inset:0;background:rgba(0,0,0,.58);backdrop-filter:blur(5px);-webkit-backdrop-filter:blur(5px);opacity:0;visibility:hidden;transition:opacity .3s ease,visibility 0s linear .3s;z-index:20}
+    .bottom-sheet{position:fixed;z-index:21;left:0;right:0;bottom:0;max-width:560px;margin:0 auto;padding:10px 16px calc(18px + env(safe-area-inset-bottom));background:rgba(28,28,30,.97);border:1px solid rgba(255,255,255,.09);border-bottom:0;border-radius:25px 25px 0 0;box-shadow:0 -18px 55px rgba(0,0,0,.45);backdrop-filter:blur(24px);-webkit-backdrop-filter:blur(24px);transform:translateY(105%);visibility:hidden;pointer-events:none;transition:transform .4s cubic-bezier(.22,1,.36,1),visibility 0s linear .4s;max-height:92dvh;overflow-y:auto;-webkit-overflow-scrolling:touch;overscroll-behavior:contain}
+    body[data-sheet] .sheet-backdrop{opacity:1;visibility:visible;transition:opacity .3s ease,visibility 0s}
+    body[data-sheet="expense"] #expenseSheet,body[data-sheet="savings"] #savingsSheet,body[data-sheet="currency"] #currencySheet{transform:translateY(0);visibility:visible;pointer-events:auto;transition:transform .4s cubic-bezier(.22,1,.36,1),visibility 0s}
+    body[data-sheet]{overflow:hidden}
+    .sheet-handle{width:38px;height:5px;border-radius:9px;background:#636366;margin:0 auto 13px}
+    .sheet-heading{display:flex;align-items:center;justify-content:space-between;margin:0 2px 14px}
+    .sheet-heading h2{font-size:21px}
+    .close-sheet{width:40px;height:40px;border:0;border-radius:50%;background:#3a3a3c;color:#c7c7cc;font-size:24px;line-height:1}
+    .sheet-note{color:var(--muted);font-size:13px;line-height:1.4;margin:0 2px 12px}
+
+    /* Формы */
+    .amount-label,.field-label{display:block;color:var(--muted);font-size:13px;margin:0 0 8px 2px}
+    .field-label{margin-top:14px}
+    .amount-input{width:100%;min-height:72px;padding:8px 14px;border:1px solid var(--line);border-radius:16px;outline:none;background:var(--field);color:#fff;font-size:36px;font-weight:700;letter-spacing:-.04em}
+    .field{width:100%;min-height:50px;background:var(--field);border:1px solid var(--line);border-radius:13px;padding:0 12px;color:var(--text);outline:none}
+    .amount-input:focus,.field:focus{border-color:rgba(10,132,255,.85);box-shadow:0 0 0 3px rgba(10,132,255,.16)}
+    .invalid{border-color:var(--danger)!important;box-shadow:0 0 0 3px rgba(255,107,120,.15)!important}
+    .form-error{color:var(--danger);font-size:13px;margin:8px 2px 0;min-height:0}
+    input[type="date"]{color-scheme:dark}
+    .chips{display:flex;flex-wrap:wrap;gap:8px}
+    .chip{display:inline-flex;align-items:center;gap:6px;min-height:44px;padding:0 14px;border-radius:999px;border:1px solid var(--line);background:var(--field);font-size:14px;font-weight:600;transition:background .2s,border-color .2s}
+    .chip.active{background:rgba(10,132,255,.24);border-color:var(--accent)}
+    .date-toggle{margin-top:12px;min-height:44px;padding:0 4px;border:0;background:none;color:#64d2ff;font-size:14px;font-weight:600}
+    .primary-btn{width:100%;min-height:56px;border:0;border-radius:16px;margin-top:16px;color:#fff;font-size:17px;font-weight:750;background:linear-gradient(135deg,#0a84ff,#5e5ce6 60%,#bf5af2);box-shadow:0 8px 24px rgba(94,92,230,.4)}
+    .primary-btn:active{transform:scale(.985)}
+    .save-row{display:grid;grid-template-columns:1fr 1.3fr;gap:10px}
+    .save-row .field{min-width:0}
+    .save-actions{display:grid;grid-template-columns:1fr 1fr;gap:10px;margin-top:12px}
+    .save-btn{min-height:52px;border:0;border-radius:14px;background:linear-gradient(135deg,#30d158,#64e08a);color:#04210d;font-size:15px;font-weight:750}
+    .save-btn.minus{background:#3a3a3c;color:#fff}
+    .save-btn:active{transform:scale(.985)}
+    .savings-big{font-size:34px;font-weight:760;letter-spacing:-.04em;color:var(--green);margin:0 2px 14px}
+    .savings-list{display:flex;flex-direction:column;gap:7px;margin-top:16px}
+    .saving-item{display:flex;align-items:center;gap:10px;padding:8px 8px 8px 12px;border-radius:13px;background:rgba(255,255,255,.05);font-size:14px}
+    .saving-info{flex:1;min-width:0}
+    .saving-title{overflow:hidden;text-overflow:ellipsis;white-space:nowrap;font-weight:600}
+    .saving-date{color:var(--muted);font-size:12px;margin-top:3px}
+    .saving-amount{font-weight:700;white-space:nowrap;font-variant-numeric:tabular-nums}
+    .saving-amount.plus{color:var(--green)}.saving-amount.minus{color:var(--danger)}
+    .saving-empty{color:var(--muted);text-align:center;font-size:14px;padding:14px 8px;line-height:1.45}
+
+    /* Валюты */
+    .cur-list{display:flex;flex-direction:column;gap:4px;margin-top:12px;max-height:48dvh;overflow-y:auto;-webkit-overflow-scrolling:touch}
+    .cur-item{display:flex;align-items:center;gap:10px;width:100%;min-height:48px;padding:8px 12px;border:0;border-radius:12px;background:rgba(255,255,255,.05);text-align:left;font-size:14px}
+    .cur-item.active{background:rgba(10,132,255,.35)}
+    .cur-code{font-weight:750;width:46px;flex:0 0 46px}
+    .cur-name{flex:1;min-width:0;color:#d4d3db;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+    .cur-sym{color:var(--muted);font-size:13px}
+    .cur-empty{color:var(--muted);text-align:center;padding:20px;font-size:14px}
+
+    /* Тост */
+    .toast{position:fixed;left:50%;bottom:calc(92px + env(safe-area-inset-bottom));transform:translate(-50%,20px);max-width:min(92vw,520px);display:flex;align-items:center;justify-content:center;gap:12px;padding:12px 16px;border-radius:14px;background:rgba(58,58,60,.97);backdrop-filter:blur(14px);-webkit-backdrop-filter:blur(14px);color:#fff;font-size:14px;line-height:1.35;text-align:center;box-shadow:0 10px 30px rgba(0,0,0,.5);opacity:0;pointer-events:none;transition:opacity .2s,transform .2s;z-index:50}
+    .toast.show{opacity:1;transform:translate(-50%,0)}
+    .toast.has-action.show{pointer-events:auto}
+    .toast-action{border:0;background:none;color:#64d2ff;font-weight:700;font-size:14px;min-height:36px;padding:0 4px}
+
+    @keyframes rise{from{opacity:0;transform:translateY(10px)}to{opacity:1;transform:none}}
+    @media(prefers-reduced-motion:reduce){*{animation:none!important;transition:none!important}html{scroll-behavior:auto}}
+    @media(max-width:370px){body{padding-left:12px;padding-right:12px}.card{padding:15px}.chart-card{gap:10px}}
+  </style>
+</head>
+<body>
+  <main class="app">
+    <header class="topbar">
+      <div>
+        <div class="eyebrow" id="todayLabel">Личный бюджет</div>
+        <h1>Мои расходы</h1>
+        <div class="privacy-line">🔒 Данные только на этом устройстве</div>
+      </div>
+      <button class="currency-btn" id="currencyBtn" type="button" aria-label="Выбрать валюту">EUR ▾</button>
+    </header>
+
+    <div class="banner" id="storageBanner" hidden>Браузер не даёт сохранять данные. Всё, что ты запишешь, пропадёт при закрытии страницы. Открой приложение в обычной (не приватной) вкладке Safari.</div>
+
+    <div class="periods" role="group" aria-label="Период">
+      <button class="period-btn" data-period="day" type="button">Сегодня</button>
+      <button class="period-btn active" data-period="month" type="button">Месяц</button>
+      <button class="period-btn" data-period="all" type="button">Всё время</button>
+    </div>
+
+    <section class="card summary" aria-label="Сводка расходов">
+      <div class="summary-label" id="summaryLabel">Потрачено за месяц</div>
+      <div class="total" id="totalAmount">0,00 €</div>
+      <div class="insight" id="insight"></div>
+      <div class="summary-bottom">
+        <div class="stat-pill"><span class="dot"></span><span id="expenseCount">0 записей</span></div>
+      </div>
+    </section>
+
+    <section class="card savings" aria-label="Накопления">
+      <div>
+        <div class="summary-label">Накоплено</div>
+        <div class="savings-total" id="savingsTotal">0,00 €</div>
+        <div class="savings-sub" id="savingsSub"></div>
+      </div>
+      <button class="ghost-btn" id="openSavings" type="button">Изменить</button>
+    </section>
+
+    <div class="section-head"><h2>Куда уходят деньги</h2></div>
+    <section class="card chart-card" aria-label="Расходы по категориям">
+      <div class="chart-area">
+        <div class="donut" id="donut"><div class="donut-inner"><strong id="chartTotal">0,00 €</strong><span>всего</span></div></div>
+      </div>
+      <div class="legend" id="legend"></div>
+    </section>
+
+    <div class="section-head">
+      <h2>История</h2>
+      <span class="count" id="listCount">0 записей</span>
+    </div>
+    <section class="expense-list" id="expenseList" aria-live="polite"></section>
+
+    <div class="footer-note">🔒 Данные хранятся только на этом устройстве и никуда не отправляются. Если очистить данные Safari, они пропадут — иногда сохраняй копию.</div>
+    <div class="footer-actions">
+      <button class="ghost-btn" id="exportBtn" type="button">Сохранить копию</button>
+      <button class="ghost-btn" id="importBtn" type="button">Загрузить копию</button>
+      <input type="file" id="importFile" accept=".json,application/json" hidden>
+    </div>
+  </main>
+
+  <div class="sheet-backdrop" id="sheetBackdrop"></div>
+
+  <!-- Шторка: новая трата -->
+  <section class="bottom-sheet" id="expenseSheet" role="dialog" aria-modal="true" aria-labelledby="sheetTitle">
+    <div class="sheet-handle"></div>
+    <div class="sheet-heading"><h2 id="sheetTitle">Что потратил?</h2><button class="close-sheet" data-close type="button" aria-label="Закрыть">×</button></div>
+    <form id="expenseForm" novalidate>
+      <label class="amount-label" for="amount">Сумма</label>
+      <input class="amount-input" id="amount" name="amount" type="number" inputmode="decimal" min="0.01" step="0.01" placeholder="0,00" autocomplete="off">
+      <div class="form-error" id="expenseError" role="alert" hidden></div>
+
+      <span class="field-label">Категория</span>
+      <div class="chips" id="chips" role="group" aria-label="Категория"></div>
+
+      <label class="field-label" for="note">Комментарий (необязательно)</label>
+      <input class="field" id="note" name="note" type="text" maxlength="60" placeholder="Например, продукты">
+
+      <button class="date-toggle" id="dateToggle" type="button">Сегодня ▾</button>
+      <div id="dateWrap" hidden><input class="field" id="date" name="date" type="date" aria-label="Дата"></div>
+
+      <button class="primary-btn" type="submit">Сохранить</button>
+    </form>
+  </section>
+
+  <!-- Шторка: накопления -->
+  <section class="bottom-sheet" id="savingsSheet" role="dialog" aria-modal="true" aria-label="Накопления">
+    <div class="sheet-handle"></div>
+    <div class="sheet-heading"><h2>Накопления</h2><button class="close-sheet" data-close type="button" aria-label="Закрыть">×</button></div>
+    <div class="savings-big" id="savingsBig">0,00 €</div>
+    <div class="save-row">
+      <input class="field" id="saveAmount" type="number" inputmode="decimal" min="0.01" step="0.01" placeholder="Сумма" autocomplete="off">
+      <input class="field" id="saveNote" type="text" maxlength="60" placeholder="Комментарий (необязательно)">
+    </div>
+    <div class="form-error" id="saveError" role="alert" hidden></div>
+    <div class="save-actions">
+      <button class="save-btn" type="button" data-save="add">Отложить</button>
+      <button class="save-btn minus" type="button" data-save="withdraw">Взять из накоплений</button>
+    </div>
+    <div class="savings-list" id="savingsList"></div>
+  </section>
+
+  <!-- Шторка: валюта -->
+  <section class="bottom-sheet" id="currencySheet" role="dialog" aria-modal="true" aria-label="Выбор валюты">
+    <div class="sheet-handle"></div>
+    <div class="sheet-heading"><h2>Валюта</h2><button class="close-sheet" data-close type="button" aria-label="Закрыть">×</button></div>
+    <p class="sheet-note" id="curNote" hidden>Суммы не пересчитываются: изменится только валюта в подписях. Лучше выбрать её один раз.</p>
+    <input class="field" id="currencySearch" type="search" placeholder="Поиск: евро, USD, тенге…" autocomplete="off">
+    <div class="cur-list" id="curList"></div>
+  </section>
+
+  <div class="toast" id="toast" role="status"></div>
+  <div class="bottom-dock"><button class="dock-add" id="openSheet" type="button"><span>＋</span> Записать трату</button></div>
+
+  <script>
+    (() => {
+      'use strict';
+      const STORAGE_KEY = 'simple_expense_tracker_v1';
+      const categories = {
+        food:      { name: 'Еда',         icon: '🍎', color: '#ff9f0a' },
+        transport: { name: 'Транспорт',   icon: '🚗', color: '#0a84ff' },
+        shopping:  { name: 'Покупки',     icon: '🛍️', color: '#bf5af2' },
+        home:      { name: 'Дом',         icon: '🏠', color: '#30d158' },
+        fun:       { name: 'Развлечения', icon: '🎮', color: '#ff375f' },
+        health:    { name: 'Здоровье',    icon: '💊', color: '#64d2ff' },
+        other:     { name: 'Другое',      icon: '✦',  color: '#98989f' }
+      };
+      const $ = (id) => document.getElementById(id);
+      const pad = (n) => String(n).padStart(2, '0');
+      const todayISO = () => { const d = new Date(); return `${d.getFullYear()}-${pad(d.getMonth()+1)}-${pad(d.getDate())}`; };
+      const DATE_RE = /^\d{4}-\d{2}-\d{2}$/;
+
+      let expenses = [], savings = [];
+      let currency = 'EUR', period = 'month', lastCategory = 'food', selectedCategory = 'food';
+      let memoryStore = null, storageOK = true, toastTimer, freshId = null;
+
+      try { localStorage.setItem('__t', '1'); localStorage.removeItem('__t'); } catch (_) { storageOK = false; }
+      try { if (navigator.storage && navigator.storage.persist) navigator.storage.persist(); } catch (_) {}
+
+      /* ---------- Тост (с необязательной кнопкой «Отменить») ---------- */
+      function toast(msg, actionLabel, action) {
+        const t = $('toast');
+        t.textContent = msg;
+        t.classList.toggle('has-action', !!actionLabel);
+        if (actionLabel) {
+          const b = document.createElement('button');
+          b.type = 'button'; b.className = 'toast-action'; b.textContent = actionLabel;
+          b.addEventListener('click', () => { action(); t.classList.remove('show', 'has-action'); });
+          t.appendChild(b);
+        }
+        t.classList.add('show');
+        clearTimeout(toastTimer);
+        toastTimer = setTimeout(() => t.classList.remove('show', 'has-action'), actionLabel ? 5500 : 3200);
+      }
+      function showError(id, msg, inputEl) {
+        const el = $(id); el.textContent = msg; el.hidden = false;
+        if (inputEl) { inputEl.classList.add('invalid'); inputEl.focus(); }
+      }
+      function clearError(id, inputEl) { $(id).hidden = true; if (inputEl) inputEl.classList.remove('invalid'); }
+
+      /* ---------- Данные ---------- */
+      function parseData(data) {
+        const out = { expenses: [], savings: [], currency: null, lastCategory: null };
+        if (!data || typeof data !== 'object') return out;
+        if (Array.isArray(data.expenses)) out.expenses = data.expenses.filter(x => x && typeof x.id === 'string' && Number.isFinite(Number(x.amount)) && Number(x.amount) > 0 && categories[x.category] && DATE_RE.test(x.date));
+        if (Array.isArray(data.savings)) out.savings = data.savings.filter(x => x && typeof x.id === 'string' && Number.isFinite(Number(x.amount)) && Number(x.amount) !== 0 && DATE_RE.test(x.date));
+        if (/^[A-Z]{3}$/.test(data.currency || '')) out.currency = data.currency;
+        if (categories[data.lastCategory]) out.lastCategory = data.lastCategory;
+        return out;
+      }
+      function applyData(d) {
+        expenses = d.expenses; savings = d.savings;
+        if (d.currency) currency = d.currency;
+        if (d.lastCategory) lastCategory = d.lastCategory;
+      }
+      function loadData() {
+        try {
+          let raw = null;
+          try { raw = localStorage.getItem(STORAGE_KEY); } catch (_) {}
+          if (!raw) raw = memoryStore;
+          if (!raw) return;
+          applyData(parseData(JSON.parse(raw)));
+        } catch (err) { console.warn('Не удалось прочитать данные:', err); expenses = []; savings = []; }
+      }
+      function saveData() {
+        const json = JSON.stringify({ expenses, savings, currency, lastCategory });
+        memoryStore = json;
+        try { localStorage.setItem(STORAGE_KEY, json); }
+        catch (err) { $('storageBanner').hidden = false; console.warn(err); }
+      }
+      function exportData() {
+        const blob = new Blob([JSON.stringify({ expenses, savings, currency, lastCategory, exportedAt: new Date().toISOString() }, null, 2)], { type: 'application/json' });
+        const url = URL.createObjectURL(blob);
+        const a = document.createElement('a');
+        a.href = url; a.download = `rashody-${todayISO()}.json`;
+        document.body.appendChild(a); a.click(); a.remove();
+        setTimeout(() => URL.revokeObjectURL(url), 2000);
+        toast('Копия сохранена в «Файлы»/«Загрузки»');
+      }
+      function importData(file) {
+        const reader = new FileReader();
+        reader.onload = () => {
+          try {
+            const data = JSON.parse(String(reader.result));
+            if (!data || (!Array.isArray(data.expenses) && !Array.isArray(data.savings))) throw new Error('bad');
+            const d = parseData(data);
+            if (!confirm(`Заменить текущие данные копией? В файле: трат — ${d.expenses.length}, записей накоплений — ${d.savings.length}.`)) return;
+            applyData(d); saveData(); render();
+            toast('Копия загружена');
+          } catch (_) { toast('Не получилось прочитать файл. Нужна копия, сохранённая из этого приложения.'); }
+        };
+        reader.readAsText(file);
+      }
+
+      /* ---------- Форматирование ---------- */
+      function money(value) {
+        try { return new Intl.NumberFormat('ru-RU', { style: 'currency', currency, maximumFractionDigits: 2 }).format(value); }
+        catch (_) { return `${Number(value).toFixed(2)} ${currency}`; }
+      }
+      function formatDate(s) {
+        const [y, m, d] = s.split('-').map(Number);
+        return new Intl.DateTimeFormat('ru-RU', { day: 'numeric', month: 'short', year: 'numeric' }).format(new Date(y, m - 1, d));
+      }
+      function plural(n, f) {
+        const a = n % 10, b = n % 100;
+        if (a === 1 && b !== 11) return f[0];
+        if (a >= 2 && a <= 4 && (b < 12 || b > 14)) return f[1];
+        return f[2];
+      }
+      const escapeHTML = (v) => String(v).replace(/[&<>"']/g, ch => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[ch]));
+      const sum = (arr) => arr.reduce((s, x) => s + Number(x.amount), 0);
+
+      function getVisibleExpenses() {
+        const today = todayISO(), month = today.slice(0, 7);
+        if (period === 'day') return expenses.filter(x => x.date === today);
+        if (period === 'month') return expenses.filter(x => x.date.startsWith(month));
+        return [...expenses];
+      }
+
+      /* ---------- Вывод по периоду ---------- */
+      function topCategory(visible, total) {
+        const sums = {};
+        visible.forEach(x => sums[x.category] = (sums[x.category] || 0) + Number(x.amount));
+        const [key, val] = Object.entries(sums).sort((a, b) => b[1] - a[1])[0];
+        return { name: categories[key].name, pct: Math.round(val / total * 100) };
+      }
+      function insightText(visible, total) {
+        if (!expenses.length) return 'Записывай траты — здесь появится картина месяца.';
+        if (!visible.length) return period === 'day' ? 'Сегодня трат пока нет.' : 'За этот период трат нет.';
+        const top = topCategory(visible, total);
+        if (period !== 'month') return `Больше всего — ${top.name} (${top.pct}%)`;
+        const now = new Date(), day = now.getDate();
+        let s = `≈ ${money(total / day)} в день`;
+        const prev = new Date(now.getFullYear(), now.getMonth() - 1, 1);
+        const pk = `${prev.getFullYear()}-${pad(prev.getMonth() + 1)}`;
+        const prevTotal = sum(expenses.filter(x => x.date.startsWith(pk) && Number(x.date.slice(8, 10)) <= day));
+        if (prevTotal > 0) {
+          const diff = Math.round((total - prevTotal) / prevTotal * 100);
+          s += diff === 0 ? ' · как в прошлом месяце к этому числу' : ` · на ${Math.abs(diff)}% ${diff < 0 ? 'меньше' : 'больше'}, чем в прошлом месяце к этому числу`;
+        }
+        return s;
+      }
+
+      /* ---------- Рендер ---------- */
+      function render() {
+        const visible = getVisibleExpenses();
+        const total = sum(visible), count = visible.length;
+        $('currencyBtn').textContent = currency + ' ▾';
+        $('summaryLabel').textContent = period === 'day' ? 'Потрачено сегодня' : period === 'month' ? 'Потрачено за месяц' : 'Всего потрачено';
+        $('totalAmount').textContent = money(total);
+        $('chartTotal').textContent = money(total);
+        $('insight').textContent = insightText(visible, total);
+        $('expenseCount').textContent = `${count} ${plural(count, ['запись', 'записи', 'записей'])}`;
+        $('listCount').textContent = `${count} ${plural(count, ['запись', 'записи', 'записей'])}`;
+        renderChart(visible, total);
+        renderList(visible);
+        renderSavings();
+      }
+      function renderChart(visible, total) {
+        const sums = {};
+        visible.forEach(x => sums[x.category] = (sums[x.category] || 0) + Number(x.amount));
+        const sorted = Object.entries(sums).sort((a, b) => b[1] - a[1]);
+        const legend = $('legend');
+        if (!total || !sorted.length) {
+          $('donut').style.background = 'conic-gradient(#34343e 0deg 360deg)';
+          legend.innerHTML = '<div class="empty-chart">Здесь появится разбивка по категориям</div>';
+          return;
+        }
+        let angle = 0;
+        const stops = sorted.map(([key, value]) => { const s = angle; angle += value / total * 360; return `${categories[key].color} ${s}deg ${angle}deg`; });
+        $('donut').style.background = `conic-gradient(${stops.join(',')})`;
+        legend.innerHTML = sorted.map(([key, value]) => {
+          const c = categories[key];
+          return `<div class="legend-row"><span class="legend-color" style="background:${c.color}"></span><span class="legend-name">${c.name}</span><span class="legend-value">${money(value)} <em>${Math.round(value / total * 100)}%</em></span></div>`;
+        }).join('');
+      }
+      function renderList(visible) {
+        const list = $('expenseList');
+        if (!visible.length) {
+          list.innerHTML = expenses.length
+            ? '<div class="empty-list">За этот период трат нет.</div>'
+            : '<div class="empty-list"><strong>Пока пусто</strong>Нажми «Записать трату» — это займёт 5 секунд.</div>';
+          return;
+        }
+        const sorted = [...visible].sort((a, b) => b.date.localeCompare(a.date) || (b.createdAt || 0) - (a.createdAt || 0));
+        list.innerHTML = sorted.map(x => {
+          const c = categories[x.category];
+          const title = escapeHTML((x.note || '').trim() || c.name);
+          return `<article class="expense-item${x.id === freshId ? ' fresh' : ''}"><div class="category-icon" aria-hidden="true" style="background:${c.color}2e">${c.icon}</div><div class="expense-info"><div class="expense-title">${title}</div><div class="expense-meta">${c.name} · ${formatDate(x.date)}</div></div><div class="expense-amount">${money(Number(x.amount))}</div><button class="delete-btn" type="button" data-delete="${x.id}" aria-label="Удалить трату">×</button></article>`;
+        }).join('');
+      }
+      const savingsTotal = () => Math.round(savings.reduce((s, x) => s + Number(x.amount), 0) * 100) / 100;
+      function renderSavings() {
+        const tot = money(savingsTotal());
+        $('savingsTotal').textContent = tot;
+        $('savingsBig').textContent = tot;
+        const month = todayISO().slice(0, 7);
+        const delta = Math.round(sum(savings.filter(x => x.date.startsWith(month))) * 100) / 100;
+        $('savingsSub').textContent = !savings.length ? 'Отложи первую сумму — она появится здесь' : delta ? `${delta > 0 ? '+' : '−'}${money(Math.abs(delta))} за этот месяц` : '';
+        $('savingsSub').hidden = !$('savingsSub').textContent;
+        const list = $('savingsList');
+        if (!savings.length) { list.innerHTML = '<div class="saving-empty">Пока ничего не отложено.<br>Введи сумму и нажми «Отложить».</div>'; return; }
+        const sorted = [...savings].sort((a, b) => b.date.localeCompare(a.date) || (b.createdAt || 0) - (a.createdAt || 0));
+        list.innerHTML = sorted.map(x => {
+          const amt = Number(x.amount), plus = amt > 0;
+          const title = escapeHTML((x.note || '').trim() || (plus ? 'Отложено' : 'Взято'));
+          return `<div class="saving-item"><div class="saving-info"><div class="saving-title">${title}</div><div class="saving-date">${formatDate(x.date)}</div></div><div class="saving-amount ${plus ? 'plus' : 'minus'}">${plus ? '+' : '−'}${money(Math.abs(amt))}</div><button class="delete-btn" type="button" data-delete-saving="${x.id}" aria-label="Удалить запись">×</button></div>`;
+        }).join('');
+      }
+      function renderChips() {
+        $('chips').innerHTML = Object.entries(categories).map(([k, c]) =>
+          `<button class="chip${k === selectedCategory ? ' active' : ''}" type="button" data-cat="${k}" aria-pressed="${k === selectedCategory}"><span aria-hidden="true">${c.icon}</span>${c.name}</button>`).join('');
+      }
+
+      /* ---------- Накопления ---------- */
+      function addSaving(kind) {
+        const input = $('saveAmount');
+        const amount = Math.round(Number(input.value) * 100) / 100;
+        if (!Number.isFinite(amount) || amount <= 0) { showError('saveError', 'Введи сумму больше нуля.', input); return; }
+        if (kind === 'withdraw' && amount > savingsTotal()) { showError('saveError', `Нельзя взять больше, чем накоплено (${money(savingsTotal())}).`, input); return; }
+        clearError('saveError', input);
+        savings.push({ id: `${Date.now()}-${Math.random().toString(36).slice(2, 8)}`, amount: kind === 'withdraw' ? -amount : amount, note: $('saveNote').value.trim(), date: todayISO(), createdAt: Date.now() });
+        saveData();
+        input.value = ''; $('saveNote').value = '';
+        render();
+        toast(kind === 'withdraw' ? `Взято ${money(amount)}. Осталось ${money(savingsTotal())}` : `Отложено ${money(amount)}. Всего ${money(savingsTotal())}`);
+      }
+
+      /* ---------- Валюты ---------- */
+      let allCurrencies = null;
+      function getCurrencies() {
+        if (allCurrencies) return allCurrencies;
+        let codes;
+        try { codes = Intl.supportedValuesOf('currency'); } catch (_) { codes = []; }
+        const fallback = ['BYN','RUB','USD','EUR','GBP','PLN','UAH','KZT','CNY','JPY','CHF','CZK','TRY','GEL','AMD','AED','UZS','KGS','AZN','MDL','CAD','AUD','INR','BRL','SEK','NOK','DKK','HUF','RON','BGN'];
+        codes = [...new Set([...fallback, ...codes])];
+        let dn = null;
+        try { dn = new Intl.DisplayNames(['ru'], { type: 'currency' }); } catch (_) {}
+        const pinned = ['BYN', 'RUB', 'USD', 'EUR'];
+        allCurrencies = codes.map(code => {
+          let name = code, sym = '';
+          try { name = (dn && dn.of(code)) || code; } catch (_) {}
+          try { sym = new Intl.NumberFormat('ru-RU', { style: 'currency', currency: code, currencyDisplay: 'narrowSymbol' }).formatToParts(0).find(p => p.type === 'currency').value; } catch (_) {}
+          return { code, name: name.charAt(0).toUpperCase() + name.slice(1), sym };
+        }).sort((a, b) => {
+          const pa = pinned.indexOf(a.code), pb = pinned.indexOf(b.code);
+          if (pa !== -1 || pb !== -1) return (pa === -1 ? 99 : pa) - (pb === -1 ? 99 : pb);
+          return a.name.localeCompare(b.name, 'ru');
+        });
+        return allCurrencies;
+      }
+      function renderCurrencies() {
+        const q = $('currencySearch').value.trim().toLowerCase();
+        const items = getCurrencies().filter(c => !q || c.code.toLowerCase().includes(q) || c.name.toLowerCase().includes(q));
+        $('curList').innerHTML = items.length ? items.map(c => `<button class="cur-item${c.code === currency ? ' active' : ''}" type="button" data-cur="${c.code}"><span class="cur-code">${c.code}</span><span class="cur-name">${escapeHTML(c.name)}</span><span class="cur-sym">${escapeHTML(c.sym)}</span></button>`).join('') : '<div class="cur-empty">Ничего не найдено</div>';
+      }
+
+      /* ---------- Шторки ---------- */
+      const sheets = { expense: 'expenseSheet', savings: 'savingsSheet', currency: 'currencySheet' };
+      function resetSheetDrag() { Object.values(sheets).forEach(id => { $(id).style.transform = ''; $(id).style.transition = ''; }); }
+      function updateDateLabel() {
+        const d = $('date').value || todayISO();
+        $('dateToggle').textContent = (d === todayISO() ? 'Сегодня' : formatDate(d)) + ' ▾';
+      }
+      function openSheet(name) {
+        resetSheetDrag();
+        if (name === 'expense') {
+          selectedCategory = lastCategory; renderChips();
+          $('date').max = todayISO(); $('date').value = todayISO();
+          $('dateWrap').hidden = true; updateDateLabel();
+          clearError('expenseError', $('amount'));
+        }
+        if (name === 'currency') {
+          $('currencySearch').value = ''; renderCurrencies(); $('curList').scrollTop = 0;
+          $('curNote').hidden = !(expenses.length || savings.length);
+        }
+        if (name === 'savings') clearError('saveError', $('saveAmount'));
+        document.body.dataset.sheet = name;
+        // Фокус сразу в обработчике нажатия — только так iOS открывает клавиатуру.
+        if (name === 'expense') $('amount').focus({ preventScroll: true });
+        if (name === 'savings') $('saveAmount').focus({ preventScroll: true });
+      }
+      function closeSheet() {
+        delete document.body.dataset.sheet;
+        if (document.activeElement && document.activeElement.blur) document.activeElement.blur();
+      }
+
+      // Свайп вниз за ручку или заголовок
+      let drag = null;
+      document.addEventListener('touchstart', (e) => {
+        const head = e.target.closest && e.target.closest('.sheet-handle, .sheet-heading');
+        const sheet = head && head.closest('.bottom-sheet');
+        if (!sheet || e.target.closest('.close-sheet')) return;
+        drag = { sheet, y: e.touches[0].clientY, dy: 0 };
+      }, { passive: true });
+      document.addEventListener('touchmove', (e) => {
+        if (!drag) return;
+        drag.dy = Math.max(0, e.touches[0].clientY - drag.y);
+        drag.sheet.style.transition = 'none';
+        drag.sheet.style.transform = `translateY(${drag.dy}px)`;
+      }, { passive: true });
+      document.addEventListener('touchend', () => {
+        if (!drag) return;
+        const { sheet, dy } = drag; drag = null;
+        sheet.style.transition = '';
+        if (dy > 90) { sheet.style.transform = 'translateY(105%)'; closeSheet(); setTimeout(() => { if (!document.body.dataset.sheet) sheet.style.transform = ''; }, 450); }
+        else sheet.style.transform = '';
+      });
+
+      /* ---------- Клики ---------- */
+      document.addEventListener('click', (event) => {
+        const target = event.target instanceof Element ? event.target : event.target.parentElement;
+        if (!target) return;
+
+        const periodBtn = target.closest('button[data-period]');
+        if (periodBtn) {
+          period = periodBtn.dataset.period;
+          document.querySelectorAll('.period-btn').forEach(b => b.classList.toggle('active', b === periodBtn));
+          render(); return;
+        }
+        const catBtn = target.closest('button[data-cat]');
+        if (catBtn) { selectedCategory = catBtn.dataset.cat; renderChips(); return; }
+        const curBtn = target.closest('button[data-cur]');
+        if (curBtn) {
+          const changed = curBtn.dataset.cur !== currency;
+          currency = curBtn.dataset.cur; saveData(); closeSheet(); render();
+          if (changed && (expenses.length || savings.length)) toast('Валюта изменена. Суммы не пересчитаны.');
+          return;
+        }
+        const saveBtn = target.closest('button[data-save]');
+        if (saveBtn) { addSaving(saveBtn.dataset.save); return; }
+
+        const delSaving = target.closest('button[data-delete-saving]');
+        if (delSaving) {
+          const idx = savings.findIndex(x => x.id === delSaving.dataset.deleteSaving);
+          if (idx < 0) return;
+          const [item] = savings.splice(idx, 1);
+          saveData(); render();
+          toast('Запись удалена', 'Отменить', () => { savings.push(item); saveData(); render(); });
+          return;
+        }
+        const delBtn = target.closest('button[data-delete]');
+        if (delBtn) {
+          const idx = expenses.findIndex(x => x.id === delBtn.dataset.delete);
+          if (idx < 0) return;
+          const [item] = expenses.splice(idx, 1);
+          saveData(); render();
+          toast('Трата удалена', 'Отменить', () => { expenses.push(item); saveData(); render(); });
+          return;
+        }
+
+        if (target.closest('#openSheet')) { openSheet('expense'); return; }
+        if (target.closest('#openSavings')) { openSheet('savings'); return; }
+        if (target.closest('#currencyBtn')) { openSheet('currency'); return; }
+        if (target.closest('[data-close]') || target.closest('#sheetBackdrop')) { closeSheet(); return; }
+        if (target.closest('#dateToggle')) { $('dateWrap').hidden = !$('dateWrap').hidden; return; }
+        if (target.closest('#exportBtn')) { exportData(); return; }
+        if (target.closest('#importBtn')) { $('importFile').click(); return; }
+      });
+      $('importFile').addEventListener('change', (e) => { const f = e.target.files[0]; if (f) importData(f); e.target.value = ''; });
+      $('date').addEventListener('change', updateDateLabel);
+      $('currencySearch').addEventListener('input', renderCurrencies);
+      $('amount').addEventListener('input', () => clearError('expenseError', $('amount')));
+      $('saveAmount').addEventListener('input', () => clearError('saveError', $('saveAmount')));
+      document.addEventListener('keydown', e => { if (e.key === 'Escape') closeSheet(); });
+
+      /* ---------- Добавление траты ---------- */
+      $('expenseForm').addEventListener('submit', (event) => {
+        event.preventDefault();
+        const amountEl = $('amount');
+        const amount = Number(String(amountEl.value).replace(',', '.'));
+        const date = $('date').value || todayISO();
+        if (!Number.isFinite(amount) || amount <= 0) { showError('expenseError', 'Введи сумму больше нуля.', amountEl); return; }
+        if (!categories[selectedCategory] || !DATE_RE.test(date)) { showError('expenseError', 'Проверь дату и категорию.'); return; }
+        const rec = { id: `${Date.now()}-${Math.random().toString(36).slice(2, 8)}`, amount: Math.round(amount * 100) / 100, category: selectedCategory, date, note: $('note').value.trim(), createdAt: Date.now() };
+        expenses.push(rec);
+        lastCategory = selectedCategory;
+        saveData();
+        amountEl.value = ''; $('note').value = '';
+        closeSheet();
+        freshId = rec.id;
+        render();
+        freshId = null;
+        const todayTotal = sum(expenses.filter(x => x.date === todayISO()));
+        toast(date === todayISO() ? `Записано · Сегодня: ${money(todayTotal)}` : `Записано на ${formatDate(date)}`);
+      });
+
+      /* ---------- Старт ---------- */
+      function updateTodayLabel() { $('todayLabel').textContent = new Intl.DateTimeFormat('ru-RU', { weekday: 'long', day: 'numeric', month: 'long' }).format(new Date()); }
+      document.addEventListener('visibilitychange', () => { if (!document.hidden) { updateTodayLabel(); render(); } });
+      $('storageBanner').hidden = storageOK;
+      updateTodayLabel();
+      loadData();
+      render();
+    })();
+  </script>
+</body>
+</html>
